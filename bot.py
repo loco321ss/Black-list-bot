@@ -40,7 +40,7 @@ async def on_voice_state_update(member, before, after):
         conectado = True
         print("Entré al canal")
 
-    elif len(personas) < 2 and conectado:
+    elif len(personas) < 1 and conectado:
         if canal.guild.voice_client:
             await canal.guild.voice_client.disconnect()
         conectado = False
