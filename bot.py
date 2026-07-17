@@ -35,7 +35,7 @@ async def on_voice_state_update(member, before, after):
 
     personas = [m for m in canal.members if not m.bot]
 
-    if len(personas) >= 2 and not conectado:
+    if len(personas) >= 1 and not conectado:
         await canal.connect()
         conectado = True
         print("Entré al canal")
