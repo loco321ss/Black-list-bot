@@ -37,7 +37,7 @@ async def on_voice_state_update(member, before, after):
         if voice is None:
             try:
                 print("Intentando entrar...")
-                await canal.connect()
+                await canal.connect(reconnect=True, timeout=30)
                 print("✅ Entré al canal.")
             except Exception as e:
                 print(f"ERROR: {e}")
