@@ -3,7 +3,6 @@ from discord.ext import commands
 import os
 
 TOKEN = os.getenv("TOKEN")
-
 CANAL_VOZ = "The Black list"
 
 intents = discord.Intents.default()
@@ -13,8 +12,6 @@ intents.members = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-conectado = False
-
 
 @bot.event
 async def on_ready():
@@ -23,8 +20,6 @@ async def on_ready():
 
 @bot.event
 async def on_voice_state_update(member, before, after):
-    global conectado
-
     if member.bot:
         return
 
@@ -33,18 +28,28 @@ async def on_voice_state_update(member, before, after):
     if canal is None:
         return
 
+    # Solo usuarios reales
     personas = [m for m in canal.members if not m.bot]
 
-    if len(personas) >= 2 and not conectado:
-        await canal.connect()
-        conectado = True
-        print("Entré al canal")
+    voice_client = member.guild.voice_client
 
-    elif len(personas) < 1 and conectado:
-        if canal.guild.voice_client:
-            await canal.guild.voice_client.disconnect()
-        conectado = False
-        print("Salí del canal")
+    # Entrar cuando haya 2 o más personas
+    if len(personas) >= 2:
+        if voice_client is None:
+            try:
+                await canal.connect()
+                print("Entré al canal.")
+            except Exception as e:
+                print(f"Error al conectar: {e}")
+
+    # Salir cuando quede menos de 2 personas
+    else:
+        if voice_client is not None:
+            try:
+                await voice_client.disconnect()
+                print("Salí del canal.")
+            except Exception as e:
+                print(f"Error al desconectar: {e}")
 
 
 bot.run(TOKEN)
