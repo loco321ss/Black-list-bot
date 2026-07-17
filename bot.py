@@ -19,10 +19,7 @@ async def on_ready():
 
 @bot.event
 async def on_voice_state_update(member, before, after):
-    if member.bot:
-        return
-
-    print(f"Cambio de voz: {member.name}")
+    print(f"Evento detectado: {member.display_name}")
 
     canal = discord.utils.get(member.guild.voice_channels, name=CANAL_VOZ)
 
@@ -32,27 +29,27 @@ async def on_voice_state_update(member, before, after):
 
     personas = [m for m in canal.members if not m.bot]
 
-    print(f"Personas en '{CANAL_VOZ}': {len(personas)}")
+    print(f"Hay {len(personas)} personas en '{CANAL_VOZ}'")
 
-    voice_client = member.guild.voice_client
+    voice = member.guild.voice_client
 
     if len(personas) >= 2:
-        if voice_client is None:
-            print("Intentando conectar...")
+        if voice is None:
             try:
+                print("Intentando entrar...")
                 await canal.connect()
-                print("✅ Conectado al canal.")
+                print("✅ Entré al canal.")
             except Exception as e:
-                print(f"❌ Error al conectar: {e}")
+                print(f"ERROR: {e}")
 
-    else:
-        if voice_client is not None:
-            print("Desconectando...")
+    elif len(personas) == 0:
+        if voice is not None:
             try:
-                await voice_client.disconnect()
-                print("👋 Desconectado.")
+                print("Saliendo...")
+                await voice.disconnect()
+                print("✅ Salí del canal.")
             except Exception as e:
-                print(f"❌ Error al desconectar: {e}")
+                print(f"ERROR: {e}")
 
 
 bot.run(TOKEN)
