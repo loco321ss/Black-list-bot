@@ -1,6 +1,6 @@
 import os
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 
 TOKEN = os.getenv("TOKEN")
 CANAL_VOZ = "The Black list"
@@ -11,61 +11,51 @@ intents.voice_states = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# Evita que connect() se ejecute varias veces al mismo tiempo
-conectando = False
-
 
 @bot.event
 async def on_ready():
     print(f"✅ Conectado como {bot.user}")
 
+    if not revisar_canal.is_running():
+        revisar_canal.start()
 
-@bot.event
-async def on_voice_state_update(member, before, after):
-    global conectando
 
-    canal = discord.utils.get(member.guild.voice_channels, name=CANAL_VOZ)
+@tasks.loop(minutes=5)
+async def revisar_canal():
+    print("Revisando canal...")
 
-    if canal is None:
-        return
+    for guild in bot.guilds:
 
-    personas = [m for m in canal.members if not m.bot]
-    cantidad = len(personas)
+        canal = discord.utils.get(guild.voice_channels, name=CANAL_VOZ)
 
-    print(f"{cantidad} personas en '{CANAL_VOZ}'")
+        if canal is None:
+            continue
 
-    voice = member.guild.voice_client
+        personas = [m for m in canal.members if not m.bot]
 
-    # Si hay 2 o más personas
-    if cantidad >= 2:
+        print(f"Hay {len(personas)} personas.")
 
-        # Ya está conectado
-        if voice and voice.is_connected():
-            print("Ya estoy conectado.")
-            return
+        voice = guild.voice_client
 
-        # Ya hay un intento de conexión en curso
-        if conectando:
-            print("Ya estoy intentando conectar...")
-            return
+        if len(personas) >= 2:
 
-        conectando = True
+            if voice is None or not voice.is_connected():
+                try:
+                    print("Entrando...")
+                    await canal.connect(timeout=30)
+                    print("✅ Conectado.")
+                except Exception as e:
+                    print(e)
 
-        try:
-            print("Entrando al canal...")
-            await canal.connect(timeout=30, reconnect=True)
-            print("✅ Conectado.")
-        except Exception as e:
-            print("ERROR:", e)
-        finally:
-            conectando = False
+        else:
 
-    # Si queda 1 o ninguna persona, salir
-    else:
-        if voice and voice.is_connected():
-            try:
-                print("Saliendo del canal...")
-                await voice.disconnect(force=True)
-                print("✅ Desconectado.")
-            except Exception as e:
-                print("ERROR:", e)
+            if voice and voice.is_connected():
+                try:
+                    print("Saliendo...")
+                    await voice.disconnect(force=True)
+                    print("✅ Desconectado.")
+                except Exception as e:
+                    print(e)
+
+
+bot.run(TOKEN)
